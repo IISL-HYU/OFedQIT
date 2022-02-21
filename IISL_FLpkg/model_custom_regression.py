@@ -22,10 +22,34 @@ class CustomModelList_Regression(list):
         else:
           for j in range(len(train_results[0])):
             gradient_avg[j] += train_results[0][j]
-      
+      loss_avg = loss_avg / len(self)
+      for i in range(len(gradient_avg)):
+        gradient_avg[i] = gradient_avg[i] / len(self)
+      ## Update weights
+      central_server.optimizer.apply_gradients(zip(gradient_avg, trainable_vars))
       for i, model in enumerate(self):
-        print(model.loss_temp_list)
-      pdb.set_trace()
+        self[i].model.set_weights(central_server.model.get_weights())
+        # model.optimizer.apply_gradients(zip(gradient_avg, self[i].model.trainable_variables))
+      # # Update metrics (includes the metric that tracks the loss)
+      # # Return a dict mapping metric names to current value
+      return loss_avg
+
+    # Quantization method included
+    def qfed_avg(self, x, y, central_server):
+      trainable_vars = central_server.model.trainable_variables
+      loss_avg = 0
+
+      for i, model in enumerate(self):
+        train_results = model.q_train_step(x[int(i*len(x)/len(self)):int((i+1)*len(x)/len(self))],y[int(i*len(x)/len(self)):int((i+1)*len(x)/len(self))])
+        model.loss_temp_list.append(train_results[1])
+        loss_temp = np.mean(model.loss_temp_list)
+        loss_avg += loss_temp
+        # Averaging gradients
+        if(i % len(self) == 0):
+          gradient_avg = train_results[0]
+        else:
+          for j in range(len(train_results[0])):
+            gradient_avg[j] = gradient_avg[j] + train_results[0][j]
       loss_avg = loss_avg / len(self)
       for i in range(len(gradient_avg)):
         gradient_avg[i] = gradient_avg[i] / len(self)
@@ -130,35 +154,66 @@ class CustomModel_Regression(keras.Model):
       # Compute gradients
       trainable_vars = self.model.trainable_variables
       gradients = tape.gradient(loss, trainable_vars)
-      # # Update weights
-      # # Update metrics (includes the metric that tracks the loss)
-      # result_metric = 0
-      # metric.update_state(y, y_pred)
-      # result_metric = metric.result().numpy()
-      # # Return a dict mapping metric names to current value
       return gradients, loss.numpy()
-    
-    def p_train_step(self, x, y, metric, central_server):
-      loss_fn = keras.losses.SparseCategoricalCrossentropy()
+    def q_train_step(self, x, y):
+      loss_fn = keras.losses.MeanSquaredError()
         # Unpack the data. Its structure depends on your model and
         # on what you pass to `fit()`.
       with tf.GradientTape() as tape:
         y_pred = self.model(x, training=True)  # Forward pass
-        y_pred_cet = central_server.model(x, training=True)
         # Compute the loss value
         # (the loss function is configured in `compile()`)
         loss = loss_fn(y, y_pred)
-        loss_cet = loss_fn(y, y_pred_cet)
-      # Compute gradients
       trainable_vars = self.model.trainable_variables
       gradients = tape.gradient(loss, trainable_vars)
-      # Update weights
-      # Update metrics (includes the metric that tracks the loss)
-      result_metric = 0
-      metric.update_state(y, y_pred_cet)
-      result_metric = metric.result().numpy()
+      s = 1
+      grad_len = len(gradients)
+      q_gradients = [(tf.Variable(gradients[i])) for i in range(grad_len)]
+      # reshape (1, all_params)
+      model_params = [None for i in range(len(q_gradients))]
+      for i in range(len(q_gradients)):
+        model_params[i] = q_gradients[i].numpy().shape
+      all_params = []
+      for i in range(len(q_gradients)):
+        all_params = np.append(all_params, q_gradients[i])
+      all_params = quantize(all_params, s)
+      q_gradients_list = [None for i in range(len(model_params))]
+      bound_bef, bound_aft = 0, 0
+      for i in range(len(model_params)):
+        mulp = 1
+        for j in range(len(model_params[i])):
+          mulp = mulp * model_params[i][j]
+        bound_bef = bound_aft
+        bound_aft = bound_aft + mulp
+        q_gradients_list[i] = all_params[bound_bef:bound_aft].reshape(model_params[i])
+      for i in range(grad_len):
+        # Time check
+        # work_start = int(time.time() * 1000.0)
+        q_gradients[i].assign(q_gradients_list[i])
       # # Return a dict mapping metric names to current value
-      return gradients, loss_cet.numpy(), result_metric
+      return q_gradients, loss.numpy()
+    
+    # def p_train_step(self, x, y, metric, central_server):
+    #   loss_fn = keras.losses.SparseCategoricalCrossentropy()
+    #     # Unpack the data. Its structure depends on your model and
+    #     # on what you pass to `fit()`.
+    #   with tf.GradientTape() as tape:
+    #     y_pred = self.model(x, training=True)  # Forward pass
+    #     y_pred_cet = central_server.model(x, training=True)
+    #     # Compute the loss value
+    #     # (the loss function is configured in `compile()`)
+    #     loss = loss_fn(y, y_pred)
+    #     loss_cet = loss_fn(y, y_pred_cet)
+    #   # Compute gradients
+    #   trainable_vars = self.model.trainable_variables
+    #   gradients = tape.gradient(loss, trainable_vars)
+    #   # Update weights
+    #   # Update metrics (includes the metric that tracks the loss)
+    #   result_metric = 0
+    #   metric.update_state(y, y_pred_cet)
+    #   result_metric = metric.result().numpy()
+    #   # # Return a dict mapping metric names to current value
+    #   return gradients, loss_cet.numpy(), result_metric
   
 
 def randomize_list(n, p):
