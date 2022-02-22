@@ -11,6 +11,9 @@ import pdb
 import math
 
 N = 100
+L = 10
+
+prob = 0.1
 # sca_metric = keras.metrics.MeanSquaredError(name="sca")
 # p_sca_metric = keras.metrics.SparseCategoricalAccuracy(name="p_sca")
 # rp_sca_metric = keras.metrics.SparseCategoricalAccuracy(name="rp_sca")
@@ -20,8 +23,8 @@ N = 100
 # x_train = x_train.reshape((60000, 28, 28, 1))
 # x_test = x_test.reshape((10000, 28, 28, 1))
 # x_train, x_test = x_train / 255.0, x_test / 255.0
-dataset = scipy.io.loadmat('./Data/Conductivity.mat')
-# dataset = scipy.io.loadmat('./Data/Wave.mat')
+# dataset = scipy.io.loadmat('./Data/Conductivity.mat')
+dataset = scipy.io.loadmat('./Data/Wave.mat')
 X = dataset['X']
 y = dataset['y']
 X = X.tolist()
@@ -61,10 +64,10 @@ for iter in range(1):
     y = y_train[N*(i):N*(i+1)]
 
     # pdb.set_trace()
-    results = all_models.fed_avg(x, y, central_server)
+    results = all_models.Lpfed_avg(x, y, central_server, prob, 1, i)
     loss_list.append(results)
 
-    q_results = q_all_models.qfed_avg(x, y, q_central_server)
+    q_results = q_all_models.Lpqfed_avg(x, y, q_central_server, prob, L, i)
     q_loss_list.append(q_results)
     # p_loss_list.append(p_results[0])
     # p_accuracy_list.append(p_results[1])
@@ -83,17 +86,17 @@ for iter in range(1):
 
     if(i % 10 == 0):
       print("iteration : ", iter, ", i : ", i)
-      print("loss : %.7f " %( results))
-      print("[Q]loss : %.7f " %( q_results))
+      # print("loss : %.7f " %(results))
+      # print("[Q]loss : %.7f " %( q_results))
       # print("[RP]loss : %.7f, sca : %.7f" %( rp_results[0], rp_results[1]))
     #   print("[R]loss : %.7f, sca : %.7f" %( r_results[0], r_results[1]))
     #   print("[RQ]loss : %.7f, sca : %.7f" %( rq_results[0], rq_results[1]))
     
-# with open("./Regression_mse/OFedAvg_Wave.pkl","wb") as f:
-#     pickle.dump(loss_list, f)
-    
-with open("./Regression_mse/OFedAvg_Conductivity.pkl","wb") as f:
+with open("./Regression_mse_dohyeok/OFedAvg_Wav_p0.1.pkl","wb") as f:
     pickle.dump(loss_list, f)
     
-with open("./Regression_mse/OFedIT_Q_Conductivity.pkl","wb") as f:
+with open("./Regression_mse_dohyeok/OFedQIT_Wav_L10_s1_p0.1.pkl","wb") as f:
     pickle.dump(q_loss_list, f)
+    
+# with open("./Regression_mse/OFedIT_Q_Conductivity.pkl","wb") as f:
+#     pickle.dump(q_loss_list, f)

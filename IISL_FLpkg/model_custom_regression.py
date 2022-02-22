@@ -7,62 +7,86 @@ import pdb
 from .quantize import quantize
 
 class CustomModelList_Regression(list):
-    def fed_avg(self, x, y, central_server):
+    def Lpfed_avg(self, x, y, central_server, prob, L, marker):
       trainable_vars = central_server.model.trainable_variables
       loss_avg = 0
-
       for i, model in enumerate(self):
         train_results = model.train_step(x[int(i*len(x)/len(self)):int((i+1)*len(x)/len(self))],y[int(i*len(x)/len(self)):int((i+1)*len(x)/len(self))])
         model.loss_temp_list.append(train_results[1])
         loss_temp = np.mean(model.loss_temp_list)
         loss_avg += loss_temp
         # Averaging gradients
-        if(i % len(self) == 0):
-          gradient_avg = train_results[0]
+        if marker % L == 0:
+          model.gradient_sum = train_results[0]
         else:
           for j in range(len(train_results[0])):
-            gradient_avg[j] += train_results[0][j]
+            model.gradient_sum[j] += train_results[0][j]
       loss_avg = loss_avg / len(self)
-      for i in range(len(gradient_avg)):
-        gradient_avg[i] = gradient_avg[i] / len(self)
-      ## Update weights
-      central_server.optimizer.apply_gradients(zip(gradient_avg, trainable_vars))
-      for i, model in enumerate(self):
-        self[i].model.set_weights(central_server.model.get_weights())
-        # model.optimizer.apply_gradients(zip(gradient_avg, self[i].model.trainable_variables))
-      # # Update metrics (includes the metric that tracks the loss)
-      # # Return a dict mapping metric names to current value
+      ## Update weights 
+      if (marker + 1) % L == 0:
+        random_list = randomize_list(len(self), prob)
+        randomized_models = []
+        gradient_avg = 0
+        for i, model in enumerate(self):
+          if(random_list[i] != 0):
+            randomized_models.append(self[i].model)
+            if(gradient_avg == 0):
+              gradient_avg = model.gradient_sum
+            else:
+              for j in range(len(model.gradient_sum)):
+                gradient_avg[j] += model.gradient_sum[j]
+        if(len(randomized_models) != 0):
+          for i in range(len(gradient_avg)):
+            gradient_avg[i] = gradient_avg[i] / (len(randomized_models))
+            central_server.optimizer.apply_gradients(zip(gradient_avg, trainable_vars))
+          for i, model in enumerate(self):
+            self[i].model.set_weights(central_server.model.get_weights())
       return loss_avg
+        
+
 
     # Quantization method included
-    def qfed_avg(self, x, y, central_server):
+    def Lpqfed_avg(self, x, y, central_server, prob, L, marker):
       trainable_vars = central_server.model.trainable_variables
       loss_avg = 0
-
       for i, model in enumerate(self):
         train_results = model.q_train_step(x[int(i*len(x)/len(self)):int((i+1)*len(x)/len(self))],y[int(i*len(x)/len(self)):int((i+1)*len(x)/len(self))])
         model.loss_temp_list.append(train_results[1])
         loss_temp = np.mean(model.loss_temp_list)
         loss_avg += loss_temp
         # Averaging gradients
-        if(i % len(self) == 0):
-          gradient_avg = train_results[0]
+        if marker % L == 0:
+          model.gradient_sum = train_results[0]
         else:
-          for j in range(len(train_results[0])):
-            gradient_avg[j] = gradient_avg[j] + train_results[0][j]
+          tmp = [x + y for x, y in zip(model.gradient_sum, train_results[0])]
+          model.gradient_sum = tmp
+          # for j in range(len(train_results[0])):
+          #   for k in range(len(train_results[0][j])):
+          #     model.gradient_sum[j][k] += train_results[0][j][k]
+           
       loss_avg = loss_avg / len(self)
-      for i in range(len(gradient_avg)):
-        gradient_avg[i] = gradient_avg[i] / len(self)
-      ## Update weights
-      central_server.optimizer.apply_gradients(zip(gradient_avg, trainable_vars))
-      for i, model in enumerate(self):
-        self[i].model.set_weights(central_server.model.get_weights())
-        # model.optimizer.apply_gradients(zip(gradient_avg, self[i].model.trainable_variables))
-      # # Update metrics (includes the metric that tracks the loss)
-      # # Return a dict mapping metric names to current value
+      ## Update weights 
+      if (marker + 1) % L == 0:
+        random_list = randomize_list(len(self), prob)
+        randomized_models = []
+        gradient_avg = 0
+        for i, model in enumerate(self):
+          if(random_list[i] != 0):
+            randomized_models.append(self[i].model)
+            if(gradient_avg == 0):
+              gradient_avg = model.gradient_sum
+            else:
+              for j in range(len(model.gradient_sum)):
+                gradient_avg[j] += model.gradient_sum[j]
+        if(len(randomized_models) != 0):
+          for i in range(len(gradient_avg)):
+            gradient_avg[i] = gradient_avg[i] / (len(randomized_models))
+            central_server.optimizer.apply_gradients(zip(gradient_avg, trainable_vars))
+          for i, model in enumerate(self):
+            self[i].model.set_weights(central_server.model.get_weights())
       return loss_avg
 
-    # def pfed_avg(self, x, y, metric, central_server, L, marker):
+    # def Lfed_avg(self, x, y, metric, central_server, L, marker):
     #   trainable_vars = central_server.model.trainable_variables
     #   loss_avg = 0
     #   sca_metric_avg = 0
@@ -97,7 +121,7 @@ class CustomModelList_Regression(list):
     #   # # Return a dict mapping metric names to current value
     #   return loss_avg, sca_metric_avg
 
-    # def rpfed_avg(self, x, y, metric, rp_central_server, prob, L, marker):
+    # def Lpfed_avg(self, x, y, metric, rp_central_server, prob, L, marker):
     #   trainable_vars = rp_central_server.model.trainable_variables
     #   loss_avg = 0
     #   sca_metric_avg = 0
