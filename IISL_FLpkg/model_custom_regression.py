@@ -4,6 +4,7 @@ import tensorflow as tf
 from tensorflow import keras
 import random
 import pdb
+import math
 from .quantize import quantize
 
 class CustomModelList_Regression(list):
@@ -190,7 +191,7 @@ class CustomModel_Regression(keras.Model):
         loss = loss_fn(y, y_pred)
       trainable_vars = self.model.trainable_variables
       gradients = tape.gradient(loss, trainable_vars)
-      s = 1
+      s, b = 1, 1
       grad_len = len(gradients)
       q_gradients = [(tf.Variable(gradients[i])) for i in range(grad_len)]
       # reshape (1, all_params)
@@ -200,7 +201,11 @@ class CustomModel_Regression(keras.Model):
       all_params = []
       for i in range(len(q_gradients)):
         all_params = np.append(all_params, q_gradients[i])
-      all_params = quantize(all_params, s)
+      div_len = math.ceil(len(all_params) / b)  
+      for i in range(b):
+        temp_params = all_params[i*div_len:(i+1)*div_len]
+        temp_params = quantize(temp_params, s)
+        all_params[i*div_len:(i+1)*div_len] = temp_params
       q_gradients_list = [None for i in range(len(model_params))]
       bound_bef, bound_aft = 0, 0
       for i in range(len(model_params)):
