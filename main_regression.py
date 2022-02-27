@@ -23,8 +23,11 @@ prob = 0.1
 # x_train = x_train.reshape((60000, 28, 28, 1))
 # x_test = x_test.reshape((10000, 28, 28, 1))
 # x_train, x_test = x_train / 255.0, x_test / 255.0
-dataset = scipy.io.loadmat('./Data/Conductivity.mat')
+dataset = scipy.io.loadmat('./Data/TomData.mat')
+# dataset = scipy.io.loadmat('./Data/TwitterDataL.mat')
+# dataset = scipy.io.loadmat('./Data/AirData.mat')
 # dataset = scipy.io.loadmat('./Data/Wave.mat')
+# dataset = scipy.io.loadmat('./Data/Conductivity.mat')
 X = dataset['X']
 y = dataset['y']
 X = X.tolist()
@@ -92,10 +95,10 @@ for iter in range(1):
     #   print("[R]loss : %.7f, sca : %.7f" %( r_results[0], r_results[1]))
     #   print("[RQ]loss : %.7f, sca : %.7f" %( rq_results[0], rq_results[1]))
     
-with open("./Regression_mse/OFedAvg_Cdt_p0.1_after.pkl","wb") as f:
+with open("./Regression_mse_dohyeok/OFedAvg_Tom_p0.1.pkl","wb") as f:
     pickle.dump(loss_list, f)
     
-with open("./Regression_mse/OFedQIT_Cdt_L10_s1_p0.1_after.pkl","wb") as f:
+with open("./Regression_mse_dohyeok/OFedQIT_Tom_L10_s1_p0.1.pkl","wb") as f:
     pickle.dump(q_loss_list, f)
     
 # with open("./Regression_mse/OFedIT_Q_Conductivity.pkl","wb") as f:

@@ -3,8 +3,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 import random
-import pdb
-import math
+
 from .quantize import quantize_gradient_sum
 
 class CustomModelList_Regression(list):
@@ -20,8 +19,8 @@ class CustomModelList_Regression(list):
         if marker % L == 0:
           model.gradient_sum = train_results[0]
         else:
-          for j in range(len(train_results[0])):
-            model.gradient_sum[j] += train_results[0][j]
+          tmp = [x + y for x, y in zip(model.gradient_sum, train_results[0])]
+          model.gradient_sum = tmp
       loss_avg = loss_avg / len(self)
       ## Update weights 
       if (marker + 1) % L == 0:
@@ -75,8 +74,9 @@ class CustomModelList_Regression(list):
           if(random_list[i] != 0):
             randomized_models.append(self[i].model)
             # Quantize gradient_sum (Algorithm 2 in OFedQIT)
-            # pdb.set_trace()
-            model.gradient_sum = quantize_gradient_sum(model.gradient_sum, 1, 1, prob)
+            s = 1
+            b = 1
+            model.gradient_sum = quantize_gradient_sum(model.gradient_sum, s, b, prob)
             if(gradient_avg == 0):
               gradient_avg = model.gradient_sum
             else:
@@ -86,7 +86,7 @@ class CustomModelList_Regression(list):
           for i in range(len(gradient_avg)):
             gradient_avg[i] = gradient_avg[i] / (len(self))
             # pdb.set_trace()
-            central_server.optimizer.apply_gradients(zip(gradient_avg, trainable_vars))
+          central_server.optimizer.apply_gradients(zip(gradient_avg, trainable_vars))
           for i, model in enumerate(self):
             self[i].model.set_weights(central_server.model.get_weights())
       return loss_avg
