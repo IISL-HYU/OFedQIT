@@ -88,25 +88,25 @@ class CustomModelList_Classification(list):
     return loss_avg, sca_metric_avg
 
 class CustomModel_Classification(keras.Model):
-    def __init__(self, model):
-        super(CustomModel_Classification, self).__init__()
-        self.model = model
-        self.gradient_sum = 0
-      
-    def train_step(self, x, y, metric):
-      loss_fn = keras.losses.SparseCategoricalCrossentropy()
-      with tf.GradientTape() as tape:
-        y_pred = self.model(x, training=True)  # Forward pass
-        loss = loss_fn(y, y_pred)
-      # Compute gradients
-      trainable_vars = self.model.trainable_variables
-      gradients = tape.gradient(loss, trainable_vars)
-      # # Update weights
-      result_metric = 0
-      metric.update_state(y, y_pred)
-      result_metric = metric.result().numpy()
-      # # Return a dict mapping metric names to current value
-      return gradients, loss.numpy(), result_metric
+  def __init__(self, model):
+      super(CustomModel_Classification, self).__init__()
+      self.model = model
+      self.gradient_sum = 0
+    
+  def train_step(self, x, y, metric):
+    loss_fn = keras.losses.SparseCategoricalCrossentropy()
+    with tf.GradientTape() as tape:
+      y_pred = self.model(x, training=True)  # Forward pass
+      loss = loss_fn(y, y_pred)
+    # Compute gradients
+    trainable_vars = self.model.trainable_variables
+    gradients = tape.gradient(loss, trainable_vars)
+    # # Update weights
+    result_metric = 0
+    metric.update_state(y, y_pred)
+    result_metric = metric.result().numpy()
+    # # Return a dict mapping metric names to current value
+    return gradients, loss.numpy(), result_metric
     
 
 def randomize_list(n, p):
