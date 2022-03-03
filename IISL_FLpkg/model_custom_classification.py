@@ -1,17 +1,17 @@
 from numpy import gradient
-import tensorflow as tf
 from tensorflow import keras
+import tensorflow as tf
 import random
-
+import pdb
 from .quantize import quantize_gradient_sum
 
 class CustomModelList_Classification(list):
-  def Lpfed_avg(self, x, y, metric, central_server, prob, L, marker):
+  def Lpfed_avg(self, x, y, central_server, prob, L, marker):
     trainable_vars = central_server.model.trainable_variables
     loss_avg = 0
     sca_metric_avg = 0
     for i, model in enumerate(self):
-      train_results = model.train_step(x[int(i*len(x)/len(self)):int((i+1)*len(x)/len(self))],y[int(i*len(x)/len(self)):int((i+1)*len(x)/len(self))], metric)
+      train_results = model.train_step(x[int(i*len(x)/len(self)):int((i+1)*len(x)/len(self))],y[int(i*len(x)/len(self)):int((i+1)*len(x)/len(self))])
       loss_avg += train_results[1]
       sca_metric_avg += train_results[2]
       # Averaging gradients
@@ -44,12 +44,12 @@ class CustomModelList_Classification(list):
         self[i].model.set_weights(central_server.model.get_weights())
     return loss_avg, sca_metric_avg
 
-  def Lpqfed_avg(self, x, y, metric, central_server, prob, L, marker):
+  def Lpqfed_avg(self, x, y, central_server, prob, L, marker):
     trainable_vars = central_server.model.trainable_variables
     loss_avg = 0
     sca_metric_avg = 0
     for i, model in enumerate(self):
-      train_results = model.train_step(x[int(i*len(x)/len(self)):int((i+1)*len(x)/len(self))],y[int(i*len(x)/len(self)):int((i+1)*len(x)/len(self))], metric)
+      train_results = model.train_step(x[int(i*len(x)/len(self)):int((i+1)*len(x)/len(self))],y[int(i*len(x)/len(self)):int((i+1)*len(x)/len(self))])
       loss_avg += train_results[1]
       sca_metric_avg += train_results[2]
       # Averaging gradients
@@ -92,8 +92,10 @@ class CustomModel_Classification(keras.Model):
       super(CustomModel_Classification, self).__init__()
       self.model = model
       self.gradient_sum = 0
+      self.metric = keras.metrics.SparseCategoricalAccuracy()
+      self.metric.update_state([0], [[0,1]])
     
-  def train_step(self, x, y, metric):
+  def train_step(self, x, y):
     loss_fn = keras.losses.SparseCategoricalCrossentropy()
     with tf.GradientTape() as tape:
       y_pred = self.model(x, training=True)  # Forward pass
@@ -103,8 +105,10 @@ class CustomModel_Classification(keras.Model):
     gradients = tape.gradient(loss, trainable_vars)
     # # Update weights
     result_metric = 0
-    metric.update_state(y, y_pred)
-    result_metric = metric.result().numpy()
+    # pdb.set_trace()
+    self.metric.update_state(y, y_pred)
+    result_metric = self.metric.result().numpy()
+    # print(result_metric)
     # # Return a dict mapping metric names to current value
     return gradients, loss.numpy(), result_metric
     

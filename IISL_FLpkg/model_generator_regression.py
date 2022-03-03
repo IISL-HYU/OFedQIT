@@ -2,6 +2,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import initializers
 from keras import layers, models
+import pdb
 
 from .model_custom_regression import CustomModelList_Regression, CustomModel_Regression
 
@@ -9,7 +10,6 @@ from .model_custom_regression import CustomModelList_Regression, CustomModel_Reg
 def model_generation_regression(N, input_size):
     random_seed = 4
     tf.random.set_seed(random_seed)
-    
     all_models = CustomModelList_Regression()
     loss_fn = keras.losses.MeanSquaredError()
     kernel_initializer = initializers.RandomNormal(stddev=0.01)
