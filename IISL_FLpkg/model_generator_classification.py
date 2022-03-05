@@ -5,7 +5,7 @@ import pdb
 
 from .model_custom_classification import CustomModelList_Classification, CustomModel_Classification
 
-
+# MNIST
 def model_generation(N, input_size):
     random_seed = 3
     tf.random.set_seed(random_seed)
@@ -79,7 +79,7 @@ def model_generation(N, input_size):
 #     return all_models, central_server
 
 
-
+# # Occupancy
 # def model_generation(N, input_size):
 #     random_seed = 3
 #     tf.random.set_seed(random_seed)
