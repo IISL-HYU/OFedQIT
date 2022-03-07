@@ -20,15 +20,17 @@ prob3 = 0.1
 
 # Setting dataset
 
-# # Occupancy Estimation dataset
-# trainData = pd.read_csv("data/Occupancy_Estimation.csv")
-# x_train = trainData.iloc[:,:14]
-# x_train = x_train.values
-# y_train = trainData.iloc[:,14]
-# y_train = y_train.array
-# input_size = len(x_train[0])
-# reuse = 20
-# data = "Occp"
+# Occupancy Estimation dataset
+trainData = pd.read_csv("data/Occupancy_Estimation.csv")
+x_train = trainData.iloc[:,:14]
+x_train = x_train.values
+y_train = trainData.iloc[:,14]
+y_train = y_train.array
+input_size = len(x_train[0])
+reuse = 20
+data = "Occp"
+b = 30
+code = 1
 
 
 # (x_train, y_train), (x_test, y_test) = datasets.cifar10.load_data()
@@ -37,29 +39,30 @@ prob3 = 0.1
 # x_train, x_test = x_train / 255.0, x_test / 255.0
 
 # MNIST dataset
-(x_train, y_train), (x_test, y_test) = datasets.mnist.load_data()
-x_train = x_train.reshape((60000, 28, 28, 1))
-x_test = x_test.reshape((10000, 28, 28, 1))
-x_train, x_test = x_train / 255.0, x_test / 255.0
-input_size = len(x_train[0])
-reuse = 6
-data = "MNIST"
-b = 1000
+# (x_train, y_train), (x_test, y_test) = datasets.mnist.load_data()
+# x_train = x_train.reshape((60000, 28, 28, 1))
+# x_test = x_test.reshape((10000, 28, 28, 1))
+# x_train, x_test = x_train / 255.0, x_test / 255.0
+# input_size = len(x_train[0])
+# reuse = 6
+# data = "MNIST"
+# b = 1000
+# code = 2
 
 # models with prob=1.0
-all_models, central_server = mg.model_generation(N, input_size)
-q_all_models, q_central_server = mg.model_generation(N, input_size)
-q2_all_models, q2_central_server = mg.model_generation(N, input_size)
+all_models, central_server = mg.model_generation(N, input_size, code)
+q_all_models, q_central_server = mg.model_generation(N, input_size, code)
+q2_all_models, q2_central_server = mg.model_generation(N, input_size, code)
 
 # # models with prob=0.5
-p2_all_models, p2_central_server = mg.model_generation(N, input_size)
-q_p2_all_models, q_p2_central_server = mg.model_generation(N, input_size)
-q2_p2_all_models, q2_p2_central_server = mg.model_generation(N, input_size)
+p2_all_models, p2_central_server = mg.model_generation(N, input_size, code)
+q_p2_all_models, q_p2_central_server = mg.model_generation(N, input_size, code)
+q2_p2_all_models, q2_p2_central_server = mg.model_generation(N, input_size, code)
 
 # # models with prob=0.1
-p3_all_models, p3_central_server = mg.model_generation(N, input_size)
-q_p3_all_models, q_p3_central_server = mg.model_generation(N, input_size)
-q2_p3_all_models, q2_p3_central_server = mg.model_generation(N, input_size)
+p3_all_models, p3_central_server = mg.model_generation(N, input_size, code)
+q_p3_all_models, q_p3_central_server = mg.model_generation(N, input_size, code)
+q2_p3_all_models, q2_p3_central_server = mg.model_generation(N, input_size, code)
 
 
 # Initializing metrics
