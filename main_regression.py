@@ -13,7 +13,7 @@ import math
 N = 100
 L = 1
 L1 = 2
-L2 = 2
+L2 = 3
 
 prob = 1.0
 prob2 = 0.5
@@ -43,7 +43,7 @@ X_t_train = np.array(X_t_train).reshape(T, input_size, 1)
 
 reuse = 1
 data = "Conductivity"
-b = 1
+b = 100
 
 # models with prob=1.0
 all_models, central_server = mg.model_generation_regression(N, input_size)
