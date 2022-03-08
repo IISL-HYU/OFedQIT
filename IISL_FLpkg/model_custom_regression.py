@@ -46,7 +46,7 @@ class CustomModelList_Regression(list):
 
 
   # Quantization method included
-  def Lpqfed_avg(self, x, y, central_server, prob, L, marker):
+  def Lpqfed_avg(self, x, y, central_server, prob, L, marker, b):
     trainable_vars = central_server.model.trainable_variables
     loss_avg = 0
     for i, model in enumerate(self):
@@ -72,7 +72,6 @@ class CustomModelList_Regression(list):
           randomized_models.append(self[i].model)
           # Quantize gradient_sum (Algorithm 2 in OFedQIT)
           s = 1
-          b = 1
           model.gradient_sum = quantize_gradient_sum(model.gradient_sum, s, b, prob) #(vector, quantization_level, division parameter, probability)
           if(gradient_avg == 0):
             gradient_avg = model.gradient_sum
