@@ -28,7 +28,7 @@ def model_generation(N, input_size, code):
         model.add(layers.Dense(4, activation='softmax'))
         tf.random.set_seed(random_seed)
         central_server = CustomModel_Classification(model)
-        central_server.compile(optimizer='adam', loss=loss_fn)
+        central_server.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), loss=loss_fn)
         return all_models, central_server
     # MNIST
     elif code == 2:
@@ -55,6 +55,46 @@ def model_generation(N, input_size, code):
         central_server = CustomModel_Classification(model)
         central_server.compile(optimizer='adam', loss=loss_fn)
 
+        return all_models, central_server
+
+    # Movement
+    elif code == 3:
+        for i in range(N):
+            model = models.Sequential()
+            model.add(layers.Dense(32, activation='relu', input_shape=(None, 1, input_size)))
+            model.add(layers.Dense(32, activation='relu'))
+            model.add(layers.Dense(2, activation='softmax'))
+            tf.random.set_seed(random_seed)
+            model1 = CustomModel_Classification(model)
+            model1.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), loss=loss_fn)
+            all_models.append(model1)
+        model = models.Sequential()
+        model.add(layers.Dense(32, activation='relu', input_shape=(None, 1, input_size)))
+        model.add(layers.Dense(32, activation='relu'))
+        model.add(layers.Dense(2, activation='softmax'))
+        tf.random.set_seed(random_seed)
+        central_server = CustomModel_Classification(model)
+        central_server.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), loss=loss_fn)
+        return all_models, central_server
+
+    # CTG
+    elif code == 4:
+        for i in range(N):
+            model = models.Sequential()
+            model.add(layers.Dense(32, activation='relu', input_shape=(None, 1, input_size)))
+            model.add(layers.Dense(32, activation='relu'))
+            model.add(layers.Dense(4, activation='softmax'))
+            tf.random.set_seed(random_seed)
+            model1 = CustomModel_Classification(model)
+            model1.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), loss=loss_fn)
+            all_models.append(model1)
+        model = models.Sequential()
+        model.add(layers.Dense(32, activation='relu', input_shape=(None, 1, input_size)))
+        model.add(layers.Dense(32, activation='relu'))
+        model.add(layers.Dense(4, activation='softmax'))
+        tf.random.set_seed(random_seed)
+        central_server = CustomModel_Classification(model)
+        central_server.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), loss=loss_fn)
         return all_models, central_server
 
 

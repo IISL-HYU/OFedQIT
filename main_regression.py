@@ -11,22 +11,24 @@ import pdb
 import math
 
 N = 100
-L1 = 1
-L2 = 10
+L = 1
+L3 = 3
 
-prob = 0.1
+prob = 1.0
+prob3 = 0.1
+
 # sca_metric = keras.metrics.MeanSquaredError(name="sca")
 # p_sca_metric = keras.metrics.SparseCategoricalAccuracy(name="p_sca")
 # rp_sca_metric = keras.metrics.SparseCategoricalAccuracy(name="rp_sca")
-
 
 # (x_train, y_train), (x_test, y_test) = datasets.mnist.load_data()
 # x_train = x_train.reshape((60000, 28, 28, 1))
 # x_test = x_test.reshape((10000, 28, 28, 1))
 # x_train, x_test = x_train / 255.0, x_test / 255.0
 # dataset = scipy.io.loadmat('./Data/TomData.mat')
-# dataset = scipy.io.loadmat('./Data/TwitterDataL.mat')
-dataset = scipy.io.loadmat('./Data/AirData.mat')
+# dataset, data = scipy.io.loadmat('./Data/TwitterDataL.mat'), "Twit"
+# dataset, data = scipy.io.loadmat('./Data/Conductivity.mat'), "Conductivity" 
+dataset, data = scipy.io.loadmat('./Data/AirDataL.mat'), "AirL"
 # dataset = scipy.io.loadmat('./Data/Wave.mat')
 # dataset = scipy.io.loadmat('./Data/Conductivity.mat')
 X = dataset['X']
@@ -37,14 +39,28 @@ T = len(y)
 input_size = len(X)
 X_t_train = [list(i) for i in zip(*X)]
 X_t_train = np.array(X_t_train).reshape(T, input_size, 1)
+reuse = 3
+b = 100
+# pdb.set_trace()
+# models with prob=1.0
 all_models, central_server = mg.model_generation_regression(N, input_size)
-q_all_models, q_central_server = mg.model_generation_regression(N, input_size)
 q2_all_models, q2_central_server = mg.model_generation_regression(N, input_size)
-# rp_all_models, rp_central_server = mg.model_generation(N, rp_sca_metric)
+
+# models with prob=0.1
+p3_all_models, p3_central_server = mg.model_generation_regression(N, input_size)
+q2_p3_all_models, q2_p3_central_server = mg.model_generation_regression(N, input_size)
 
 loss_list = [1]
 q_loss_list = [1]
 q2_loss_list = [1]
+
+p2_loss_list = [1]
+q_p2_loss_list = [1]
+q2_p2_loss_list = [1]
+
+p3_loss_list = [1]
+q_p3_loss_list = [1]
+q2_p3_loss_list = [1]
 
 T = math.floor(T/N)
 
@@ -58,33 +74,46 @@ T = math.floor(T/N)
       #   kernel_loss_int[u] = kernel_loss[u]
       #   theta_int[u] = theta[u]
 
-for iter in range(1):
+for iter in range(reuse):
   for i in range(T):
     x = X_t_train[N*(i):N*(i+1)]
     y = y_train[N*(i):N*(i+1)]
 
     # Benchmark model (OFedAvg)
-    results = all_models.Lpfed_avg(x, y, central_server, prob, 1, i)
+    results = all_models.Lpfed_avg(x, y, central_server, prob, L, i)
     loss_list.append(results)
-    # OFedQIT model I (L=1)
-    q_results = q_all_models.Lpqfed_avg(x, y, q_central_server, prob, L1, i)
-    q_loss_list.append(q_results)
     # OFedQIT model II (L=10)
-    q2_results = q2_all_models.Lpqfed_avg(x, y, q2_central_server, prob, L2, i)
+    q2_results = q2_all_models.Lpqfed_avg(x, y, q2_central_server, prob, L3, i, b)
     q2_loss_list.append(q2_results)
-
-    if(i % 10 == 0):
-      print("iteration : ", iter, ", i : ", i)
-      print("loss : %.7f " %(results))
-      print("[Q]loss : %.7f " %( q_results))
-      print("[Q2]loss : %.7f " %( q2_results))
     
-with open("./Regression_mse/OFedAvg_Air_p0.1.pkl","wb") as f:
+    # Benchmarking model(p=0.1)
+    p3_results = p3_all_models.Lpfed_avg(x, y, p3_central_server, prob3, L, i)
+    p3_loss_list.append(p3_results)
+    # OFedQIT model II (L=3)
+    q2_p3_results = q2_p3_all_models.Lpqfed_avg(x, y, q2_p3_central_server, prob3, L3, i, b)
+    q2_p3_loss_list.append(q2_p3_results)
+
+    if(i % 20 == 0):
+      print("iteration : ", iter, ", i : ", i)
+      
+      print("loss : %.7f " %(results))
+      print("[Q2]loss : %.7f " %(q2_results))
+      
+      print("loss : %.7f " %(p3_results))
+      print("[Q2]loss : %.7f " %(q2_p3_results))
+    
+    
+with open(f"./Regression_mse/OFedAvg_{data}_L{L}_p{prob}.pkl","wb") as f:
     pickle.dump(loss_list, f)
     
-with open("./Regression_mse/OFedQIT_Air_L1_s1_p0.1.pkl","wb") as f:
-    pickle.dump(q_loss_list, f)
-
-with open("./Regression_mse/OFedQIT_Air_L10_s1_p0.1.pkl","wb") as f:
+with open(f"./Regression_mse/OFedQIT_{data}_L{L3}_s1_b{b}_p{prob}.pkl","wb") as f:
     pickle.dump(q2_loss_list, f)
+    
+
+
+with open(f"./Regression_mse/OFedAvg_{data}_L{L}_p{prob3}.pkl","wb") as f:
+    pickle.dump(p3_loss_list, f)
+    
+with open(f"./Regression_mse/OFedQIT_{data}_L{L3}_s1_b{b}_p{prob3}.pkl","wb") as f:
+    pickle.dump(q2_p3_loss_list, f)
     

@@ -39,7 +39,7 @@ class CustomModelList_Classification(list):
       if(len(randomized_models) != 0):
         for i in range(len(gradient_avg)):
           gradient_avg[i] = gradient_avg[i] / (len(randomized_models))
-          central_server.optimizer.apply_gradients(zip(gradient_avg, trainable_vars))
+        central_server.optimizer.apply_gradients(zip(gradient_avg, trainable_vars))
         for i, model in enumerate(self):
           self[i].model.set_weights(central_server.model.get_weights())
     return loss_avg, sca_metric_avg
@@ -79,7 +79,7 @@ class CustomModelList_Classification(list):
       if(len(randomized_models) != 0):
         for i in range(len(gradient_avg)):
           gradient_avg[i] = gradient_avg[i] / (len(self))
-          central_server.optimizer.apply_gradients(zip(gradient_avg, trainable_vars))
+        central_server.optimizer.apply_gradients(zip(gradient_avg, trainable_vars))
         for i, model in enumerate(self):
           self[i].model.set_weights(central_server.model.get_weights())
       # # Update metrics (includes the metric that tracks the loss)
